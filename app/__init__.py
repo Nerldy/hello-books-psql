@@ -1,7 +1,7 @@
 from flask import Flask, jsonify
 from flask_sqlalchemy import SQLAlchemy
 from config import app_config
-from flask_login import LoginManager
+from flask_login import LoginManager, current_user, login_required
 from flask_migrate import Migrate
 
 db = SQLAlchemy()
@@ -19,14 +19,19 @@ def create_app(config_name):
 
 	login_manager.init_app(app)
 	login_manager.login_message = 'You must be logged in to access this page'
-	login_manager.login_view = 'auth.login'
+	login_manager.login_view = '/api/v1/auth/login'
 
 	migrate = Migrate(app, db)
 
 	from app import models
 
-	@app.route('/api/v1/books')
-	def api_get_all_books():
-		return jsonify({'message': "all books"})
+	from .admin import admin as admin_blueprint
+	app.register_blueprint(admin_blueprint, url_prefix='/api/v1/admin')
+
+	from .auth import auth as auth_blueprint
+	app.register_blueprint(auth_blueprint)
+
+	from .home import home as home_blueprint
+	app.register_blueprint(home_blueprint)
 
 	return app
