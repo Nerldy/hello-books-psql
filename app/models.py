@@ -13,6 +13,8 @@ class User(UserMixin, db.Model):
 	username = db.Column(db.String(70), index=True, nullable=False, unique=True)
 	password_hash = db.Column(db.String(140))
 	is_admin = db.Column(db.Boolean, default=False)
+	join_date = db.Column(db.DateTime, default=db.func.current_timestamp())
+	date_modified = db.Column(db.DateTime, default=db.func.current_timestamp(), onupdate=db.func.current_timestamp())
 
 	@property
 	def password(self):
