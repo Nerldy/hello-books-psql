@@ -111,7 +111,6 @@ def api_logout():
 	user = User.query.filter_by(username=request.json['username']).first()
 
 	if user is not None and user.verify_password(request.json['password']):
-		print("ndani")
 		logout_user()
 
 		return jsonify({'message': "succesfully logged out"})
