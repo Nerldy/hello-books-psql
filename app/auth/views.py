@@ -34,9 +34,13 @@ def api_register():
 		abort(401)
 
 	if 'username' not in request.json:
-		abort(401)
+		return jsonify({"error": "username field not found"}), 401
+
+	if 'email' not in request.json:
+		return jsonify({"error": "email field not found"}), 401
+
 	if 'password' not in request.json:
-		abort(401)
+		return jsonify({"error": "password field not found"}), 401
 
 	if 'username' in request.json:
 		username = format_inputs(request.json['username'])
@@ -57,6 +61,12 @@ def api_register():
 		if len(request.json['password']) < 8 or request.json['password'] == "":
 			return jsonify({"error": "password must be 8 characters or more"}), 401
 
+	user_name = User.query.filter(User.username == request.json['username']).first()
+	user_email = User.query.filter(User.username == request.json['email']).first()
+
+	if (user_name is not None) or (user_email is not None):
+		return jsonify({"message": "username or email already exists.Login or register with a new username and email. username and password MUST BE UNIQUE"}), 401
+
 	req_data = request.get_json()
 	user = User()
 	user.username = req_data.get('username', None)
@@ -66,7 +76,7 @@ def api_register():
 	db.session.add(user)
 	db.session.commit()
 
-	return jsonify({"success": "You registered"}), 201
+	return jsonify({"message": f"You registered successfully {user.username}."}), 201
 
 
 @auth.route('/api/v1/auth/login', methods=['POST'])
@@ -86,6 +96,8 @@ def api_login():
 	user = User.query.filter_by(username=request.json['username']).first()
 
 	if user is not None and user.verify_password(request.json['password']):
+		user.is_logged = True
+		db.session.commit()
 		login_user(user)
 
 		return jsonify({"message": f"logged in {request.json['username']}"})
@@ -111,8 +123,58 @@ def api_logout():
 	user = User.query.filter_by(username=request.json['username']).first()
 
 	if user is not None and user.verify_password(request.json['password']):
-		logout_user()
+		if user.is_logged == True:
+			user.is_logged = False
+			db.session.commit()
+			logout_user()
 
-		return jsonify({'message': "succesfully logged out"})
+			return jsonify({'message': f"successfully logged out {user.username}"})
 
-	return jsonify({"message": "you aren't logged in"}), 401
+		return jsonify({"message": "you aren't logged in"}), 401
+
+	abort(401)
+
+
+@auth.route('/api/v1/auth/reset-password', methods=['POST'])
+@login_required
+def api_reset_password():
+	"""
+	password reset view
+	:return: 200, 401
+	"""
+
+	if not request.json:
+		abort(401)
+
+	if 'username' not in request.json:
+		return jsonify({'error': "username filed not found"}), 401
+
+	if 'old_password' not in request.json:
+		return jsonify({'error': "old_password filed not found"}), 401
+
+	if 'new_password' not in request.json:
+		return jsonify({'error': "new_password filed not found"}), 401
+
+	if 'email' not in request.json:
+		return jsonify({'error': "email filed not found"}), 401
+
+	user = User.query.filter(User.username == request.json['username']).first()
+
+	if user is not None and user.verify_password(request.json['old_password']):
+		if 'new_password' in request.json:
+			request.json['new_password'] = request.json['new_password'].strip()
+			split_password = request.json['new_password'].split(" ")
+			join_password = "".join(split_password)
+
+			if len(join_password) != len(request.json['new_password']):
+				return jsonify({"error": "new password cannot have space characters in it"}), 401
+
+			if len(request.json['new_password']) < 8 or request.json['new_password'] == "":
+				return jsonify({"error": "new_password must be 8 characters or more"}), 401
+
+		user.password = request.json['new_password']
+		db.session.commit()
+
+		return jsonify({"message": "password updated"})
+
+	return jsonify({'error': "old_password or username does not match"})
