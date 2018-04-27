@@ -41,7 +41,7 @@ def api_admin_all_books():
 				# check if author has a middle name
 				author_details['middle_name'] = author.middle_name
 
-			book_author.append(author_details) # add book author details
+			book_author.append(author_details)  # add book author details
 
 		obj = {
 			"id": book.id,
