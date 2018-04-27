@@ -34,4 +34,12 @@ def create_app(config_name):
 	from .home import home as home_blueprint
 	app.register_blueprint(home_blueprint)
 
+	@app.errorhandler(405)
+	def method_not_allowed(error):
+		return jsonify({"error": "method not allowed"}), 405
+
+	@app.errorhandler(404)
+	def not_found(error):
+		return jsonify({"error": "not found"}), 404
+
 	return app
