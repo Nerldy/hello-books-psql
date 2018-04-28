@@ -33,13 +33,15 @@ def api_admin_all_books():
 
 		for author in book.authors:  # get book author(s) from the authors table
 			author_details = {
-				"first_name": author.first_name,
-				"last_name": author.last_name
+				"id": author.id,
+				"full_names": f"{author.first_name} {author.last_name}",
+				"date_created": author.date_created,
+				"date_modified": author.date_modified
 			}
 
 			if author.middle_name:
 				# check if author has a middle name
-				author_details['middle_name'] = author.middle_name
+				author_details['full_names'] += " " + author.middle_name
 
 			book_author.append(author_details)  # add book author details
 
