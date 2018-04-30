@@ -48,19 +48,23 @@ book_schema = {
 	},
 	'authors': {
 		'type': 'list',
+		'required': True,
 		'schema': {
 			'type': 'dict',
 			'schema': {
 				'first_name': {
 					'type': 'string',
+					'required': True,
 					'minlength': 1
 				},
 				'middle_name': {
 					'type': 'string',
+					'required': True,
 					'nullable': True
 				},
 				'last_name': {
 					'type': 'string',
+					'required': True,
 					'minlength': 1
 				}
 			}
@@ -86,6 +90,9 @@ author_schema = {
 		'minlength': 1
 	}
 }
+
+book_schema_validate = Validator(book_schema)
+author_schema_validate = Validator(author_schema)
 
 
 @admin.route('/books')
@@ -145,48 +152,46 @@ def api_admin_create_book():
 
 	req_data = request.get_json()
 
-	# Validate JSON data
-	validate_book_schema = Validator(book_schema)
 	if not req_data:
 		abort(400)
 
-	# check length of isbn
-	isbn_str = str(req_data['isbn'])
-	if (len(isbn_str) == 10) or (len(isbn_str) == 13):
-		# validate book schema
-		if validate_book_schema.validate(req_data) is not True:
-			return jsonify({'errors': validate_book_schema.errors}), 400
+	# validate json schema
+	if book_schema_validate.validate(req_data):
+		# check if book exists
+		duplicate_book = Book.query.filter(Book.isbn == req_data['isbn']).first()
 
-		new_book = Book(
-			title=format_inputs(req_data['title']),
-			isbn=req_data['isbn'],
-			synopsis=format_inputs(req_data['synopsis']).capitalize()
-		)
+		if duplicate_book is None:
 
-		for author in req_data['authors']:
-			first_name = format_inputs(author['first_name'])
-			last_name = format_inputs(author['last_name'])
-			middle_name = format_inputs(author['middle_name'])
+			str_isbn = str(req_data['isbn'])
 
-			if not first_name:
-				return jsonify({'error': "first_name cannot be empty"}), 400
+			if (len(str_isbn) == 10) or (len(str_isbn) == 13):
 
-			if not last_name:
-				return jsonify({'error': "last_name cannot be empty"}), 400
+				new_book = Book(
+					title=format_inputs(req_data['title']),
+					isbn=int(req_data['isbn']),
+					synopsis=format_inputs(req_data['synopsis'])
+				)
 
-			new_author = Author(first_name=first_name, last_name=last_name)
+				for author in req_data['authors']:
+					new_author = Author(first_name=format_inputs(author['first_name']), last_name=format_inputs(author['last_name']))
+					middle_name = format_inputs(author['middle_name'])
 
-			if middle_name:
-				new_author.middle_name = middle_name
+					if middle_name:
+						new_author.middle_name = middle_name
 
-			new_book.authors.append(new_author)
-			db.session.add(new_author)
-		try:
-			db.session.add(new_book)
-			db.session.commit()
-		except:
-			return jsonify({'error': f"something went wrong {sys.exc_info()[0]}"}), 400
+					new_book.authors.append(new_author)
+					db.session.add(new_author)
 
-		return jsonify({'created book': "success"}), 201
+				try:
+					db.session.add(new_book)
+					db.session.commit()
+					return jsonify({'message': "Book created"}), 201
+				except:
+					raise
+					return jsonify({'error': "something went wrong"}), 400
 
-	return jsonify({'error': "isbn should be 10 or 13 digits long"}), 400
+			return jsonify({'error': "isbn length must be 10 or 13 digits"}), 400
+
+		return jsonify({'error': f"book with ISBN {req_data['isbn']} already exists."}), 400
+
+	return jsonify({"error": book_schema_validate.errors}), 400
