@@ -73,6 +73,20 @@ book_schema = {
 	}
 
 }
+
+updat_book_schema = {
+	'title': {
+		'type': 'string',
+		'empty': False
+	},
+	'synopsis': {
+		'type': "string",
+		'minlength': 30,
+		'maxlength': 300
+	}
+
+}
+
 author_schema = {
 	'first_name': {
 		'type': "string",
@@ -93,6 +107,7 @@ author_schema = {
 
 book_schema_validate = Validator(book_schema)
 author_schema_validate = Validator(author_schema)
+update_book_schema_validate = Validator(updat_book_schema)
 
 
 @admin.route('/books')
@@ -195,3 +210,27 @@ def api_admin_create_book():
 		return jsonify({'error': f"book with ISBN {req_data['isbn']} already exists."}), 400
 
 	return jsonify({"error": book_schema_validate.errors}), 400
+
+
+@admin.route('/books/<int:id>', methods=['PUT'])
+@login_required
+def api_update_book(id):
+	"""
+	update the book
+	:return:
+	"""
+
+	check_admin()
+
+	if update_book_schema_validate.validate(request.get_json()):
+		req_data = request.get_json()
+		new_book_data = {
+			'title': req_data['title'],
+			'synopsis': req_data['synopsis']
+		}
+		book = db.session.query(Book).filter(Book.id == id).update(new_book_data)
+		db.session.commit()
+
+		return jsonify({"message": f"Book with ID {id} has been updated"})
+
+	return jsonify ({"message": book_schema_validate.errors})
