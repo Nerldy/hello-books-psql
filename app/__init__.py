@@ -46,4 +46,9 @@ def create_app(config_name):
 	def method_not_allowed(error):
 		return jsonify({"error": "forbidden"}), 403
 
+	@app.errorhandler(400)
+	def not_found(error):
+		return jsonify({"error": "bad request"}), 400
+
+
 	return app

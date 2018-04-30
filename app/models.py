@@ -51,8 +51,8 @@ class Book(db.Model):
 	__tablename__ = "books"
 	id = db.Column(db.Integer, primary_key=True)
 	title = db.Column(db.String(160), nullable=False)
-	isbn = db.Column(db.String(20), nullable=False, unique=True)
-	synopsis = db.Column(db.String(200), nullable=False)
+	isbn = db.Column(db.Integer, nullable=False, unique=True)
+	synopsis = db.Column(db.String(300), nullable=False)
 	date_created = db.Column(db.DateTime, default=db.func.current_timestamp())
 	date_modified = db.Column(db.DateTime, default=db.func.current_timestamp(), onupdate=db.func.current_timestamp())
 
