@@ -74,7 +74,7 @@ book_schema = {
 
 }
 
-updat_book_schema = {
+update_book_schema = {
 	'title': {
 		'type': 'string',
 		'empty': False
@@ -107,7 +107,7 @@ author_schema = {
 
 book_schema_validate = Validator(book_schema)
 author_schema_validate = Validator(author_schema)
-update_book_schema_validate = Validator(updat_book_schema)
+update_book_schema_validate = Validator(update_book_schema)
 
 
 @admin.route('/books')
@@ -224,13 +224,24 @@ def api_update_book(id):
 
 	if update_book_schema_validate.validate(request.get_json()):
 		req_data = request.get_json()
-		new_book_data = {
-			'title': req_data['title'],
-			'synopsis': req_data['synopsis']
-		}
-		book = db.session.query(Book).filter(Book.id == id).update(new_book_data)
+		book = Book.query.filter(Book.id == id).first()
+
+		if book is None:
+			abort(404)
+
+		if 'title' in req_data:
+			title = format_inputs(req_data['title'])
+			if len(title) < 1:
+				return jsonify({'error': "title cannot be empty"})
+			book.title = title
+
+		if 'synopsis' in req_data:
+			synopsis = format_inputs(req_data['synopsis'])
+			if len(synopsis) < 1:
+				return jsonify({'error': "synopsis cannot be empty"})
+			book.synopsis = synopsis
 		db.session.commit()
 
 		return jsonify({"message": f"Book with ID {id} has been updated"})
 
-	return jsonify ({"message": book_schema_validate.errors})
+	return jsonify({"message": update_book_schema_validate.errors}), 400
