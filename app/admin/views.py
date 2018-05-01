@@ -202,7 +202,6 @@ def api_admin_create_book():
 					db.session.commit()
 					return jsonify({'message': "Book created"}), 201
 				except:
-					raise
 					return jsonify({'error': "something went wrong"}), 400
 
 			return jsonify({'error': "isbn length must be 10 or 13 digits"}), 400
@@ -245,3 +244,22 @@ def api_update_book(id):
 		return jsonify({"message": f"Book with ID {id} has been updated"})
 
 	return jsonify({"message": update_book_schema_validate.errors}), 400
+
+
+@admin.route('/books/<int:id>', methods=['DELETE'])
+@login_required
+def api_delete_book(id):
+	"""
+	delete a book
+	:param id: id
+	:return: 201, 404
+	"""
+	delete_book = Book.query.filter(Book.id == id).first()
+
+	if delete_book is None:
+		abort(404)
+
+	db.session.delete(delete_book)
+	db.session.commit()
+
+	return 204
