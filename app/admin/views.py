@@ -37,7 +37,7 @@ book_schema = {
 		'empty': False
 	},
 	'isbn': {
-		'type': "integer",
+		'type': "string",
 		'required': True
 	},
 	'synopsis': {
@@ -179,11 +179,11 @@ def api_admin_create_book():
 
 			str_isbn = str(req_data['isbn'])
 
-			if (len(str_isbn) == 10) or (len(str_isbn) == 13):
+			if ((len(str_isbn) == 10) or (len(str_isbn) == 13)) and (str_isbn.isnumeric()):
 
 				new_book = Book(
 					title=format_inputs(req_data['title']),
-					isbn=int(req_data['isbn']),
+					isbn=req_data['isbn'],
 					synopsis=format_inputs(req_data['synopsis'])
 				)
 
@@ -204,7 +204,7 @@ def api_admin_create_book():
 				except:
 					return jsonify({'error': "something went wrong"}), 400
 
-			return jsonify({'error': "isbn length must be 10 or 13 digits"}), 400
+			return jsonify({'error': "isbn length must be 10 or 13 digits and must only contain numbers"}), 400
 
 		return jsonify({'error': f"book with ISBN {req_data['isbn']} already exists."}), 400
 
@@ -239,6 +239,7 @@ def api_update_book(id):
 			if len(synopsis) < 1:
 				return jsonify({'error': "synopsis cannot be empty"})
 			book.synopsis = synopsis
+
 		db.session.commit()
 
 		return jsonify({"message": f"Book with ID {id} has been updated"})
