@@ -263,4 +263,4 @@ def api_delete_book(id):
 	db.session.delete(delete_book)
 	db.session.commit()
 
-	return 204
+	return jsonify({"message": "book deleted"})
