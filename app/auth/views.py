@@ -1,7 +1,7 @@
-from ..models import User
+from ..models import UserList
 from .. import db
 from . import auth
-from flask_login import login_required, login_user, logout_user
+from flask_login import login_required, login_user, logout_user, current_user
 from flask import request, jsonify, redirect, url_for, abort
 import re
 
@@ -61,18 +61,17 @@ def api_register():
 		if len(request.json['password']) < 8 or request.json['password'] == "":
 			return jsonify({"error": "password must be 8 characters or more"}), 401
 
-	user_name = User.query.filter(User.username == request.json['username']).first()
-	user_email = User.query.filter(User.username == request.json['email']).first()
+	user_name = UserList.query.filter(UserList.username == request.json['username']).first()
+	user_email = UserList.query.filter(UserList.username == request.json['email']).first()
 
 	if (user_name is not None) or (user_email is not None):
 		return jsonify({"message": "username or email already exists.Login or register with a new username and email. username and password MUST BE UNIQUE"}), 401
 
 	req_data = request.get_json()
-	user = User()
+	user = UserList()
 	user.username = req_data.get('username', None)
 	user.email = req_data.get('email', None)
 	user.password = req_data.get('password', None)
-
 	db.session.add(user)
 	db.session.commit()
 
@@ -93,7 +92,7 @@ def api_login():
 	if 'email' not in request.json:
 		abort(401)
 
-	user = User.query.filter_by(username=request.json['username']).first()
+	user = UserList.query.filter_by(username=request.json['username']).first()
 
 	if user is not None and user.verify_password(request.json['password']):
 		user.is_logged = True
@@ -102,7 +101,7 @@ def api_login():
 
 		return jsonify({"message": f"logged in {request.json['username']}"})
 
-	return jsonify({"error": "email, password or username is invalid"}), 401
+	return jsonify({"error": "email, password or username is invalid, or user isn't registered"}), 401
 
 
 @auth.route('/api/v1/auth/logout', methods=['POST'])
@@ -120,10 +119,10 @@ def api_logout():
 	if 'email' not in request.json:
 		abort(401)
 
-	user = User.query.filter_by(username=request.json['username']).first()
+	user = UserList.query.filter_by(username=request.json['username']).first()
 
 	if user is not None and user.verify_password(request.json['password']):
-		if user.is_logged == True:
+		if user.is_logged:
 			user.is_logged = False
 			db.session.commit()
 			logout_user()
@@ -158,7 +157,7 @@ def api_reset_password():
 	if 'email' not in request.json:
 		return jsonify({'error': "email filed not found"}), 401
 
-	user = User.query.filter(User.username == request.json['username']).first()
+	user = UserList.query.filter(UserList.username == request.json['username']).first()
 
 	if user is not None and user.verify_password(request.json['old_password']):
 		if 'new_password' in request.json:
