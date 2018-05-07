@@ -2,7 +2,7 @@ from flask_login import current_user, login_required
 from flask import abort, jsonify, request
 from . import admin
 from .. import db
-from ..models import Book, Author
+from ..models import BookList, AuthorList
 from cerberus import Validator
 import re
 import sys
@@ -82,7 +82,7 @@ update_book_schema = {
 	'synopsis': {
 		'type': "string",
 		'minlength': 30,
-		'maxlength': 300
+		'maxlength': 350
 	}
 
 }
@@ -121,7 +121,7 @@ def api_admin_view_all_books():
 
 	check_admin()
 
-	all_books = Book.query.all()
+	all_books = BookList.query.all()
 	view_books = []
 
 	for book in all_books:  # loop through all the books and turn them into JSON
@@ -173,7 +173,7 @@ def api_admin_create_book():
 	# validate json schema
 	if book_schema_validate.validate(req_data):
 		# check if book exists
-		duplicate_book = Book.query.filter(Book.isbn == req_data['isbn']).first()
+		duplicate_book = BookList.query.filter(BookList.isbn == req_data['isbn']).first()
 
 		if duplicate_book is None:
 
@@ -181,14 +181,16 @@ def api_admin_create_book():
 
 			if ((len(str_isbn) == 10) or (len(str_isbn) == 13)) and (str_isbn.isnumeric()):
 
-				new_book = Book(
+				new_book = BookList(
 					title=format_inputs(req_data['title']),
 					isbn=req_data['isbn'],
 					synopsis=format_inputs(req_data['synopsis'])
 				)
 
 				for author in req_data['authors']:
-					new_author = Author(first_name=format_inputs(author['first_name']), last_name=format_inputs(author['last_name']))
+					first_name = format_inputs(author['first_name'])
+					last_name = format_inputs(author['last_name'])
+					new_author = AuthorList(first_name=first_name, last_name=last_name)
 					middle_name = format_inputs(author['middle_name'])
 
 					if middle_name:
@@ -200,7 +202,7 @@ def api_admin_create_book():
 				try:
 					db.session.add(new_book)
 					db.session.commit()
-					return jsonify({'message': "Book created"}), 201
+					return jsonify({'message': "BookList created"}), 201
 				except:
 					return jsonify({'error': "something went wrong"}), 400
 
@@ -223,7 +225,7 @@ def api_update_book(id):
 
 	if update_book_schema_validate.validate(request.get_json()):
 		req_data = request.get_json()
-		book = Book.query.filter(Book.id == id).first()
+		book = BookList.query.filter(BookList.id == id).first()
 
 		if book is None:
 			abort(404)
@@ -242,7 +244,7 @@ def api_update_book(id):
 
 		db.session.commit()
 
-		return jsonify({"message": f"Book with ID {id} has been updated"})
+		return jsonify({"message": f"BookList with ID {id} has been updated"})
 
 	return jsonify({"message": update_book_schema_validate.errors}), 400
 
@@ -255,7 +257,7 @@ def api_delete_book(id):
 	:param id: id
 	:return: 201, 404
 	"""
-	delete_book = Book.query.filter(Book.id == id).first()
+	delete_book = BookList.query.filter(BookList.id == id).first()
 
 	if delete_book is None:
 		abort(404)
