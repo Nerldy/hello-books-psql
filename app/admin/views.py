@@ -44,7 +44,7 @@ book_schema = {
 		'type': "string",
 		'required': True,
 		'minlength': 30,
-		'maxlength': 300
+		'maxlength': 1000
 	},
 	'authors': {
 		'type': 'list',
