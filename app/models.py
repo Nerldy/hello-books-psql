@@ -67,7 +67,7 @@ class BookList(db.Model):
 	id = db.Column(db.Integer, primary_key=True)
 	title = db.Column(db.String(160), nullable=False)
 	isbn = db.Column(db.String(13), nullable=False, unique=True)
-	synopsis = db.Column(db.String(350), nullable=False)
+	synopsis = db.Column(db.String(1000), nullable=False)
 	date_created = db.Column(db.DateTime, default=db.func.current_timestamp())
 	date_modified = db.Column(db.DateTime, default=db.func.current_timestamp(), onupdate=db.func.current_timestamp())
 	is_borrowed = db.Column(db.Boolean, default=False)
@@ -99,6 +99,9 @@ class BorrowedBook(db.Model):
 	id = db.Column(db.Integer, primary_key=True)
 	user_id = db.Column(db.Integer, db.ForeignKey('user_list.id'))
 	book_id = db.Column(db.Integer, db.ForeignKey('book_list.id'))
+	is_returned = db.Column(db.Boolean, default=True)
+	borrow_date = db.Column(db.DateTime, default=db.func.current_timestamp())
+	return_date = db.Column(db.DateTime)
 
 
 # class BorrowedBookHistoryList(db.Model):
