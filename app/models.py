@@ -99,7 +99,6 @@ class BorrowedBook(db.Model):
 	id = db.Column(db.Integer, primary_key=True)
 	user_id = db.Column(db.Integer, db.ForeignKey('user_list.id'))
 	book_id = db.Column(db.Integer, db.ForeignKey('book_list.id'))
-	is_returned = db.Column(db.Boolean, default=True)
 	borrow_date = db.Column(db.DateTime, default=db.func.current_timestamp())
 	return_date = db.Column(db.DateTime)
 
