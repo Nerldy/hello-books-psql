@@ -88,9 +88,11 @@ def api_books_not_returned_or_history():
 		all_borrowed_books = []
 
 		for book_borrowed in user_borrowed_books:
+			# find all books in the borrow list owned by user
 			book = BookList.query.filter(BookList.id == book_borrowed.book_id).first()
 
 			if book.is_borrowed is False:
+				# if book borrowed status is false, add it to the history list
 				book_author = []
 				for author in book.authors:
 					author_details = {
