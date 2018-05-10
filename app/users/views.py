@@ -41,8 +41,10 @@ def api_return_book(id):
 		abort(404)
 
 	if main_book.is_borrowed:  # check if book is borrowed
+		book_to_return = BorrowedBook.query.filter(BorrowedBook.book_id == id)
+		book_null_date = book_to_return.filter(BorrowedBook.return_date == None).first()
 		main_book.is_borrowed = False  # make it false
-		book.return_date = db.func.current_timestamp()  # add current time stamp of when book is being return
+		book_null_date.return_date = db.func.current_timestamp()  # add current time stamp of when book is being return
 		db.session.commit()
 
 		return jsonify({"message": f'book with ID {book.book_id} has been returned'})
@@ -52,7 +54,11 @@ def api_return_book(id):
 
 @users.route('/books')
 @login_required
-def api_books_not_returned():
+def api_books_not_returned_or_history():
+	"""
+	handles books not returned and borrow history
+	:return: books borrow history, not yet returned
+	"""
 	req_data = request.args.get('returned', None)  # confirm if returned property exists in arguments
 
 	# find user id in the borrow books table and confirm if it match current user
@@ -66,14 +72,14 @@ def api_books_not_returned():
 
 			for book_borrowed in book:  # loop through the books list
 				if book_borrowed.is_borrowed:  # check status of the book if it's borrowed
-					book_obj = { # create the book object
+					book_obj = {  # create the book object
 						'id': book_borrowed.id,
 						'title': book_borrowed.title,
 						'isbn': book_borrowed.isbn,
 						'synopsis': book_borrowed.synopsis
 					}
 
-					books_not_returned.append(book_obj) # add book object to the not returned list
+					books_not_returned.append(book_obj)  # add book object to the not returned list
 
 			return jsonify({'books yet to be returned': books_not_returned})
 		abort(404)
@@ -85,8 +91,26 @@ def api_books_not_returned():
 			book = BookList.query.filter(BookList.id == book_borrowed.book_id).first()
 
 			if book.is_borrowed is False:
+				book_author = []
+				for author in book.authors:
+					author_details = {
+						"id": author.id,
+						"full_names": f"{author.first_name} {author.last_name}",
+						"date_created": author.date_created,
+						"date_modified": author.date_modified
+					}
+
+					if author.middle_name:
+						# check if author has a middle name
+						author_details['full_names'] += " " + author.middle_name
+
+					book_author.append(author_details)  # add book author details
+
 				book_obj = {
+					'id': book.id,
 					'title': book.title,
+					'synopsis': book.synopsis,
+					'authors': book_author,
 					'date_borrowed': book_borrowed.borrow_date,
 					'date_returned': book_borrowed.return_date
 				}
@@ -94,38 +118,3 @@ def api_books_not_returned():
 				all_borrowed_books.append(book_obj)
 
 		return jsonify({'history_of_books_borrowed': all_borrowed_books})
-
-# if req_data:
-# 	all_books = []
-# 	if req_data.lower() == 'false':
-#
-# 		for b in user_borrowed_books:
-# 			for e in books_not_returned:
-# 				if e.book_id == b.id:
-# 					make_book = {
-# 						'book_id': b.id,
-# 						'title': b.title,
-# 						'isbn': b.isbn,
-# 						'synopsis': b.synopsis,
-# 						'date_borrowed': e.borrow_date
-# 					}
-# 					all_books.append(make_book)
-# 		return jsonify({"Books not yet returned": all_books})
-#
-# 	abort(404)
-
-# if user_borrowed_books is not None:
-# 	all_books = []
-# 	for book_borrowed in available_books:
-# 		for e in books_returned:
-# 			if e.id == book_borrowed.id:
-# 				make_book = {
-# 					'book_id': book_borrowed.id,
-# 					'title': book_borrowed.title,
-# 					'isbn': book_borrowed.isbn,
-# 					'synopsis': book_borrowed.synopsis,
-# 					'date_borrowed': e.borrow_date,
-# 					'date_returned': e.return_date
-# 				}
-# 				all_books.append(make_book)
-# 	return jsonify({"history of borrowed books": all_books})
