@@ -2,7 +2,7 @@ class Config(object):
 	"""
 	Common configurations
 	"""
-	DEBUG = False
+	DEBUG = True
 	CSRF_ENABLED = True
 
 
@@ -24,7 +24,6 @@ class ProductionConfig(Config):
 
 
 class TestingConfig(Config):
-	DEBUG = True
 	TESTING = True
 
 
