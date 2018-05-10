@@ -1,13 +1,24 @@
 from flask_login import UserMixin
 from werkzeug.security import generate_password_hash, check_password_hash
-
+import arrow
 from app import db, login_manager
 
+utc = arrow.utcnow()  # create time object
 
-class User(UserMixin, db.Model):
+
+# class UserLibraryList(db.Model):
+# 	__tablename__ = 'user_library_list'
+# 	id = db.Column(db.Integer, primary_key=True)
+# 	date_borrowed = db.Column(db.DateTime, default=db.func.current_timestamp())
+#
+# 	# relationships
+# 	users = db.relationship('UserList', backref='library', lazy='dynamic')
+
+
+class UserList(UserMixin, db.Model):
 	"""create a user"""
 
-	__tabelename__ = 'users'
+	__tablename__ = 'user_list'
 	id = db.Column(db.Integer, primary_key=True)
 	email = db.Column(db.String(70), index=True, nullable=False, unique=True)
 	username = db.Column(db.String(70), index=True, nullable=False, unique=True)
@@ -17,10 +28,14 @@ class User(UserMixin, db.Model):
 	join_date = db.Column(db.DateTime, default=db.func.current_timestamp())
 	date_modified = db.Column(db.DateTime, default=db.func.current_timestamp(), onupdate=db.func.current_timestamp())
 
+	# relationships
+	# library_id = db.Column(db.Integer, db.ForeignKey('user_library_list.id'))
+	borrowed_books = db.relationship('BorrowedBook', backref='user_list', lazy='dynamic')
+
 	@property
 	def password(self):
 		"""
-		Prevent pasword from being accessed
+		Prevent password from being accessed
 		"""
 		raise AttributeError('password is not a readable attribute.')
 
@@ -43,29 +58,31 @@ class User(UserMixin, db.Model):
 
 @login_manager.user_loader
 def load_user(user_id):
-	return User.query.get(int(user_id))
+	return UserList.query.get(int(user_id))
 
 
-class Book(db.Model):
+class BookList(db.Model):
 	"""represents a book"""
-	__tablename__ = "books"
+	__tablename__ = "book_list"
 	id = db.Column(db.Integer, primary_key=True)
 	title = db.Column(db.String(160), nullable=False)
 	isbn = db.Column(db.String(13), nullable=False, unique=True)
-	synopsis = db.Column(db.String(300), nullable=False)
+	synopsis = db.Column(db.String(1000), nullable=False)
 	date_created = db.Column(db.DateTime, default=db.func.current_timestamp())
 	date_modified = db.Column(db.DateTime, default=db.func.current_timestamp(), onupdate=db.func.current_timestamp())
+	is_borrowed = db.Column(db.Boolean, default=False)
 
-	authors = db.relationship('Author', secondary="books_authors", backref='books', lazy='dynamic')
+	authors = db.relationship('AuthorList', secondary="books_authors", backref='book_list', lazy='dynamic')
+	borrowed_books = db.relationship('BorrowedBook', backref='book_list', lazy='dynamic')
 
 	def __repr__(self):
 		return f'<Book: {self.title}>'
 
 
-class Author(db.Model):
+class AuthorList(db.Model):
 	"""represents the authors"""
 
-	__tablename__ = 'authors'
+	__tablename__ = 'author_list'
 	id = db.Column(db.Integer, primary_key=True)
 	first_name = db.Column(db.String(30), nullable=False)
 	middle_name = db.Column(db.String(30), nullable=True)
@@ -77,8 +94,25 @@ class Author(db.Model):
 		return f"<Author: {self.first_name} {self.last_name}>"
 
 
+class BorrowedBook(db.Model):
+	__tablename__ = 'borrowed_books'
+	id = db.Column(db.Integer, primary_key=True)
+	user_id = db.Column(db.Integer, db.ForeignKey('user_list.id'))
+	book_id = db.Column(db.Integer, db.ForeignKey('book_list.id'))
+	borrow_date = db.Column(db.DateTime, default=db.func.current_timestamp())
+	return_date = db.Column(db.DateTime)
+
+
+# class BorrowedBookHistoryList(db.Model):
+# 	__tablename__ = 'borrow_history'
+# 	id = db.Column(db.Integer, primary_key=True)
+# 	library_user_id = db.Column(db.Integer, db.ForeignKey('library_user_list.id'))
+# 	book_id = db.Column(db.Integer, db.ForeignKey('book_list.id'))
+# 	date_returned = db.Column(db.DateTime, default=db.func.current_timestamp())
+
+
 db.Table(
 	'books_authors',
-	db.Column('book_id', db.Integer, db.ForeignKey('books.id')),
-	db.Column('author_id', db.Integer, db.ForeignKey('authors.id'))
+	db.Column('book_id', db.Integer, db.ForeignKey('book_list.id')),
+	db.Column('author_id', db.Integer, db.ForeignKey('author_list.id'))
 )

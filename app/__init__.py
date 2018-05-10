@@ -34,6 +34,9 @@ def create_app(config_name):
 	from .home import home as home_blueprint
 	app.register_blueprint(home_blueprint)
 
+	from .users import users as users_blueprint
+	app.register_blueprint(users_blueprint, url_prefix='/api/v1/users')
+
 	@app.errorhandler(405)
 	def method_not_allowed(error):
 		return jsonify({"error": "method not allowed"}), 405
