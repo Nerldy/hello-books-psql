@@ -70,8 +70,7 @@ def api_books_not_returned():
 						'id': book_borrowed.id,
 						'title': book_borrowed.title,
 						'isbn': book_borrowed.isbn,
-						'synopsis': book_borrowed.synopsis,
-						'date_borrowed': book_borrowed.borrow_date
+						'synopsis': book_borrowed.synopsis
 					}
 
 					books_not_returned.append(book_obj) # add book object to the not returned list
