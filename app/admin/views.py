@@ -2,7 +2,7 @@ from flask_login import current_user, login_required
 from flask import abort, jsonify, request
 from . import admin
 from .. import db
-from ..models import BookList, AuthorList, BorrowedBook
+from ..models import BookList, AuthorList, BorrowedBook, UserList
 from cerberus import Validator
 import re
 import sys
@@ -322,6 +322,9 @@ def api_admin_find_user_who_has_not_returned_book(user_id):
 	:param user_id:
 	:return: books not returned, 404
 	"""
+
+	check_admin()
+
 	user_borrowed_books = BorrowedBook.query.filter(BorrowedBook.user_id == user_id).all()
 	books_borrowed = BookList.query.filter(BookList.is_borrowed == True).all()
 
@@ -337,3 +340,66 @@ def api_admin_find_user_who_has_not_returned_book(user_id):
 				books_not_returned.append(book_obj)
 
 	return jsonify({f'books not returned by user {user_id}': books_not_returned})
+
+
+@admin.route('/books/user/history/<int:user_id>')
+@login_required
+def api_user_history(user_id):
+	"""
+	:param user_id:
+	:return: uhistory of books user borrowed and returned
+	"""
+	check_admin()
+
+	req_args = request.args
+
+	# enter this block if args are provided
+	if validate_pagination_schema.validate(req_args):
+		# confirm if user exists
+		user_exist = UserList.query.filter(UserList.id == user_id).first()
+
+		if user_exist is None:
+			abort(404)
+
+		try:
+			# find user borrowed books that have been returned
+			page_limit = int(req_args.get('limit', None))
+			page_num = int(req_args.get('page_num', None))
+			user_borrowed_books = BorrowedBook.query.filter(BorrowedBook.user_id == user_id). \
+				filter(BorrowedBook.return_date != None). \
+				paginate(per_page=int(page_limit), page=page_num, error_out=True)
+
+			# empty history book list holder
+			books_history_list = []
+
+			# create book history list
+			for book_id in user_borrowed_books.items:
+				all_books = BookList.query.filter(BookList.id == book_id.book_id).first()
+
+				book_obj = {
+					'id': all_books.id,
+					'title': all_books.title,
+					'date_borrowed': book_id.borrow_date,
+					'date_returned': book_id.return_date
+				}
+
+				books_history_list.append(book_obj)
+			return jsonify({
+				"user_details": {
+					'username': user_exist.username,
+					'user_id': user_id,
+					'email': user_exist.email
+				},
+				'borrowed_book_history': {
+					'books': books_history_list
+				},
+				'page_details': {
+					'current_page': user_borrowed_books.page,
+					'all_pages': user_borrowed_books.pages,
+					'total_results': user_borrowed_books.total
+				}
+			})
+		except:
+			return jsonify({"error": 'are all your queries integers? That or something else went wrong in your request'}), 400
+
+	return jsonify({'error': validate_pagination_schema.errors})
