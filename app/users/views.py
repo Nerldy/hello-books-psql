@@ -3,6 +3,7 @@ from flask import jsonify, abort, request
 from . import users
 from .. import db
 from ..models import BookList, BorrowedBook
+from cerberus import Validator
 
 
 @users.route('/books/<int:id>', methods=['POST'])
