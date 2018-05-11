@@ -2,7 +2,7 @@ from flask_login import current_user, login_required
 from flask import abort, jsonify, request
 from . import admin
 from .. import db
-from ..models import BookList, AuthorList
+from ..models import BookList, AuthorList, BorrowedBook
 from cerberus import Validator
 import re
 import sys
@@ -105,9 +105,55 @@ author_schema = {
 	}
 }
 
+pagination_schema = {
+	'limit': {
+		'type': 'string',
+		'required': True
+	},
+	'page_num': {
+		'type': 'string',
+		'required': True
+	}
+}
+
 book_schema_validate = Validator(book_schema)
 author_schema_validate = Validator(author_schema)
 update_book_schema_validate = Validator(update_book_schema)
+validate_pagination_schema = Validator(pagination_schema)
+
+
+@admin.route('/books/results')
+@login_required
+def api_admin_pagination():
+	check_admin()
+
+	req_args = request.args
+
+	if validate_pagination_schema.validate(req_args):
+		try:
+			page_limit_json = int(request.args.get('limit', None))  # check if page limit is provided
+			page_number = int(request.args.get('page_num', None))
+			book_pagination = BookList.query.paginate(per_page=int(page_limit_json), page=page_number, error_out=True)
+			book_results = []
+
+			for book in book_pagination.items:
+				book_obj = {
+					'id': book.id,
+					'title': book.title,
+					'isbn': book.isbn,
+					'synopsis': book.synopsis,
+					'date_created': book.date_created,
+					'date_modified': book.date_modified
+				}
+
+				book_results.append(book_obj)
+
+			return jsonify({'current_page': book_pagination.page, 'all_pages': book_pagination.pages, 'books': book_results})
+
+		except:
+			return jsonify({"error": 'are all your queries integers? That or something else went wrong in your request'}), 400
+
+	return jsonify({"error": validate_pagination_schema.errors}), 400
 
 
 @admin.route('/books')
@@ -266,3 +312,28 @@ def api_delete_book(id):
 	db.session.commit()
 
 	return jsonify({"message": "book deleted"})
+
+
+@admin.route('/books/<int:user_id>')
+@login_required
+def api_admin_find_user_who_has_not_returned_book(user_id):
+	"""
+	find all books not yet returned by user
+	:param user_id:
+	:return: books not returned, 404
+	"""
+	user_borrowed_books = BorrowedBook.query.filter(BorrowedBook.user_id == user_id).all()
+	books_borrowed = BookList.query.filter(BookList.is_borrowed == True).all()
+
+	books_not_returned = []
+	for book in books_borrowed:
+		for user_book in user_borrowed_books:
+			if book.id == user_book.book_id and user_book.return_date == None:
+				book_obj = {
+					'id': book.id,
+					'title': book.title,
+					'date_borrowed': user_book.borrow_date
+				}
+				books_not_returned.append(book_obj)
+
+	return jsonify({f'books not returned by user {user_id}': books_not_returned})
