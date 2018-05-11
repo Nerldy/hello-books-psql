@@ -1,0 +1,12 @@
+
+language: python
+python:
+  - "3.6-dev"
+nstall:
+  - pip install -r requirements.txt
+script:
+  - nose2 --with-coverage
+notifications:
+  - false
+
+after_success: "coveralls"
