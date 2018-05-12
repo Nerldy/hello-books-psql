@@ -7,8 +7,6 @@ from flask_migrate import Migrate
 db = SQLAlchemy()
 login_manager = LoginManager()
 
-app = Flask(__name__, instance_relative_config=True)
-
 
 def create_app(config_name):
 	app = Flask(__name__, instance_relative_config=True)
@@ -52,6 +50,5 @@ def create_app(config_name):
 	@app.errorhandler(400)
 	def not_found(error):
 		return jsonify({"error": "bad request"}), 400
-
 
 	return app
