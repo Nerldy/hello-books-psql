@@ -13,7 +13,7 @@ class TestBase(TestCase):
 		config_name = 'testing'
 		app = create_app(config_name)
 		app.config.update(
-			SQLALCHEMY_DATABASE_URI='postgresql://user_tester:1234@localhost/test_hello_books_db'
+			SQLALCHEMY_DATABASE_URI='postgresql://localhost/test_hello_books_db'
 		)
 		return app
 
