@@ -11,7 +11,7 @@ services:
 postgres:
   - adpter: postgresql
 env:
-  - DB=postgress
+  - DB=postgres
 notifications:
   - false
 before_script:
