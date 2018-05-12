@@ -9,7 +9,7 @@ script:
 services:
   - postgresql
 postgres:
-  - adpater: postgresql
+  - adpter: postgresql
 env:
   - DB=postgress
 notifications:
