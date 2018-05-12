@@ -17,7 +17,8 @@ addons:
 postgres:
   - adapter: postgresql
 env:
-  - DB=postgres
+  - global:
+    - PGPORT=5433
 notifications:
   - false
 before_script:
