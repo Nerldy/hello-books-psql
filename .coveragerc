@@ -15,3 +15,4 @@ omit =
     venv/*
     */python?.?/*
     */site-packages/nose/*
+    tests/*
