@@ -1,6 +1,4 @@
 [run]
-source = hello-books-psql
-branch = True
 omit =
     venv/*
     */python?.?/*
@@ -17,4 +15,3 @@ omit =
     venv/*
     */python?.?/*
     */site-packages/nose/*
-    tests/*
