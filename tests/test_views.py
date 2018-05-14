@@ -6,6 +6,8 @@ from app.models import UserList, BorrowedBook, BookList, AuthorList
 import os
 from flask import abort
 
+def register_user(client, username, email, password):
+	return client.post('/api/')
 
 class TestBase(TestCase):
 
@@ -51,4 +53,8 @@ class TestViews(TestBase):
 
 	def test_login_view(self):
 		res = self.client.post('/api/v1/auth/login')
+		self.assertEqual(res.status_code, 401)
+
+	def test_register_view(self):
+		res = self.client.post('/api/v1/auth/register')
 		self.assertEqual(res.status_code, 401)
